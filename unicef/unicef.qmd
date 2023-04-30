@@ -1,0 +1,138 @@
+---
+title: "Unicef stats for Palma Index"
+format: 
+ html:
+   self-contained: true
+editor: visual
+Date: 29/04/2023
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+unicef_metadata <- read_csv("unicef_metadata.csv")
+unicef_indicator_1 <- read_csv("unicef_indicator_1.csv")
+```
+
+```{r echo=FALSE}
+world <- map_data("world")
+```
+
+# Introduction
+
+*GDP* and *life expectancy* are two important measures of a country's overall well-being. There is a strong correlation between *GDP* and *life expectancy*, meaning that countries with higher *GDP* tend to have higher *life expectancies*.
+
+### GDP and its effects on life expectancy
+
+-   *GDP* provides a country with the resources to invest in healthcare, education, and infrastructure, which can all contribute to longer *life expectancies*.
+
+-   Higher *GDP* can lead to improved nutrition, cleaner water and air, and better sanitation, all of which can improve health outcomes and *life expectancy*.
+
+-   Countries with higher *GDP* tend to have better healthcare systems, which can lead to earlier diagnosis and treatment of illnesses, better access to medications, and improved overall health.
+
+    ### Other factors that contribute to life expectancy
+
+    While *GDP* is an important factor, other factors also play a role in determining *life expectancy*, such as access to healthcare, lifestyle choices, and genetics.
+
+    In some cases, countries with lower *GDP* may have higher *life expectancies* than countries with higher *GDP* due to factors such as better healthcare access and lifestyle choices.
+
+    For the year 2019, GDP vs Life expectancy around the globe can be see from the map below:
+
+```{r}
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region),
+    color = "black", fill = "orange", size = 0.1) +
+  geom_point(
+    data = unicef_metadata,
+    aes(longitude, latitude, color = life_expectancy,
+        size = GDP),
+    alpha = 0.8) +  theme_minimal() + labs(title = "Life expectancy and GDP around the world",
+       subtitle = "2019",
+       fill = "Life expectancy") +
+  theme(legend.position = "right")
+```
+
+# Palma Index of Inequality
+
+Distribution of **GDP** within a country can also have an impact on life expectancy, as *wealth inequality* can lead to disparities in access to healthcare, education and other social services. Therefore, while the top 10 countries with the highest GDP distribution may have greater life expectancy on average, there can be significant disparities in life expectancy within these countries, depending on how wealth is distributed. The wealth inequality can be understood by the **Palma Index.**
+
+### What is Palma Index?
+
+The Palma Index of Inequality measures the ratio of the share of national income held by the top 10% of the population to the share of national income held by the bottom 40% of the population. A higher value of the Palma Index indicates greater inequality in income distribution.
+
+The time series graph below of the Palma Index of Inequality shows that the OBS value has fluctuated over time, with some ups and downs. However, there is a significant spike in the OBS value between **2015 to 2020**, which indicates a significant increase in wealth inequality during that period around the world. This could be due to a variety of factors, such as changes in ***government policies or shifts in the global economy***. The spike highlights the importance of addressing wealth inequality and working towards more equitable distribution of resources in order to promote social and economic well-being.
+
+```{r echo=FALSE}
+ggplot(unicef_indicator_1, aes(x=time_period, y=obs_value)) +
+  geom_line(color="blue", size=0.5) +
+  ggtitle("Palma Index of Inequality over the years") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(color="red", size=0.5) +  theme(legend.position = "none")
+
+```
+
+# Are Palma Index and GDP related?
+
+There is a growing body of research that suggests a strong relationship between GDP and the Palma Index of Inequality. In general, countries with higher GDP tend to have lower levels of income inequality. This is because higher GDP can provide a country with the resources to invest in social programs, education, and infrastructure, which can help to reduce inequality.
+
+1.  One of the key reasons why countries with higher GDP tend to have lower levels of income inequality is because higher GDP allows governments to invest in social programs and infrastructure that can help to reduce poverty and promote economic growth. For example, governments can invest in education and job training programs to help people acquire the skills they need to secure higher-paying jobs, or in healthcare systems to provide affordable access to medical care.
+2.  Higher GDP can also lead to the creation of more jobs and higher wages, which can help to reduce poverty and inequality. As a country's economy grows, businesses are likely to expand and create more job opportunities, leading to a higher demand for workers and potentially higher wages. This can help to reduce poverty and inequality by providing more people with access to better-paying jobs.
+
+However, it's important to note that while higher GDP can contribute to reducing inequality, it's not a guarantee. In some cases, countries with high levels of GDP may also have high levels of income inequality, particularly if the benefits of economic growth are not distributed equally among all members of society. The below scatterplot for the year 2019 shows the relation between GDP and Palma index (obs value). It is noted that for the year 2019, most of the countries around the world is having an obs value between **1 to 3** which then trends down to **below 0** with an increase in GDP.
+
+```{r}
+latest_indicator_data <- unicef_indicator_1 %>%
+  group_by(region) %>%
+  filter(time_period == 2019) %>%
+  ungroup()
+
+unicef_data <- latest_indicator_data %>%
+  left_join(unicef_metadata, by = "region")
+
+ggplot(unicef_data, aes(x=GDP,y=obs_value)) +
+  geom_point(alpha=0.9, color = "red") +
+  labs(title = "GDP vs Palma Index in 2019", x= "GDP", y="obs_value")+ theme_light()+
+  geom_smooth(color = "black")
+
+```
+
+# Regions with the Highest and Lowest Palma Index (2019)
+
+The bar plot illustrates the Palma Index of Inequality in the top 10 and bottom 10 countries, with **Brazil** having the highest level and **Slovakia** having the lowest level. This reflects the income distribution within a country, with higher values indicating greater income inequality. The countries at the top of the list, such as Brazil, Colombia, and Angola, have been found to have high levels of income inequality against their low levels of economic development. On the other hand, countries with lower levels of income inequality, such as Slovakia, Slovenia, and Czech Republic, have implemented policies that promote a more equal distribution of wealth. It is worth noting that while GDP is often positively correlated with the Palma Index, these countries demonstrate that economic growth alone is not sufficient to address income inequality.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+latest_data_1 <- latest_indicator_data %>%
+  group_by(region) %>%
+  ungroup()
+
+top10_high <- latest_data_1 %>%
+  arrange(desc(obs_value)) %>%
+  slice(1:10)
+
+top10_low <- latest_data_1 %>%
+  arrange(obs_value) %>%
+  slice(1:10)
+
+top10 <- bind_rows(top10_high, top10_low) %>%
+  mutate(top10 = ifelse(rank(-obs_value) <= 10, "top10", "not_top10"))
+
+bar_plot <- ggplot(top10, aes(x = reorder(region, obs_value), y = obs_value, fill = top10)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("black", "orange")) +
+  coord_flip() +
+  labs(title = "Top 10 countries with highest and lowest obs_value",subtitle = "2019",
+       x = "Region",
+       y = "Palma Index of inequality") +
+  theme_minimal()
+
+print(bar_plot)
+
+```
